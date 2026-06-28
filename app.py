@@ -1,5 +1,3 @@
-Python 3.11.9 (tags/v3.11.9:de54cf5, Apr  2 2024, 10:12:12) [MSC v.1938 64 bit (AMD64)] on win32
-Type "help", "copyright", "credits" or "license()" for more information.
 import streamlit as st
 import sqlite3
 import time
@@ -59,30 +57,30 @@ with col2:
         # Įrašome į SQLite
         proj = project_name.strip() or "Be pavadinimo"
         conn = sqlite3.connect("mobilus_laikas.db")
-...         cursor = conn.cursor()
-...         cursor.execute("INSERT INTO laiko_logas (projektas, data, trukme) VALUES (?, ?, ?)", (proj, current_date, duration_str))
-...         conn.commit()
-...         conn.close()
-...         
-...         st.success(f"Išsaugota! Trukmė: {duration_str}")
-...         st.rerun()
-... 
-... # Jei laikmatis veikia, parodome statusą
-... if st.session_state.running:
-...     st.info("⏱️ Laikmatis veikia... Paspauskite STABDYTI, kai baigsite.")
-... 
-... # Istorijos rodymas
-... st.subheader("📊 Paskutiniai įrašai")
-... conn = sqlite3.connect("mobilus_laikas.db")
-... cursor = conn.cursor()
-... cursor.execute("SELECT projektas, data, trukme FROM laiko_logas ORDER BY id DESC LIMIT 5")
-... rows = cursor.fetchall()
-... conn.close()
-... 
-... if rows:
-...     for row in rows:
-...         with st.container(border=True):
-...             st.markdown(f"**📂 {row[0]}**")
-...             st.markdown(f"📅 {row[1]} | ⏱️ {row[2]}")
-... else:
-...     st.write("Įrašų dar nėra. Paleiskite laikmatį!")
+        cursor = conn.cursor()
+        cursor.execute("INSERT INTO laiko_logas (projektas, data, trukme) VALUES (?, ?, ?)", (proj, current_date, duration_str))
+        conn.commit()
+        conn.close()
+        
+        st.success(f"Išsaugota! Trukmė: {duration_str}")
+        st.rerun()
+
+# Jei laikmatis veikia, parodome statusą
+if st.session_state.running:
+    st.info("⏱️ Laikmatis veikia... Paspauskite STABDYTI, kai baigsite.")
+
+# Istorijos rodymas
+st.subheader("📊 Paskutiniai įrašai")
+conn = sqlite3.connect("mobilus_laikas.db")
+cursor = conn.cursor()
+cursor.execute("SELECT projektas, data, trukme FROM laiko_logas ORDER BY id DESC LIMIT 5")
+rows = cursor.fetchall()
+conn.close()
+
+if rows:
+    for row in rows:
+        with st.container(border=True):
+            st.markdown(f"**📂 {row[0]}**")
+            st.markdown(f"📅 {row[1]} | ⏱️ {row[2]}")
+else:
+    st.write("Įrašų dar nėra. Paleiskite laikmatį!")
