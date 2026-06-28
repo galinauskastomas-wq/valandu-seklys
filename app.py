@@ -2,9 +2,10 @@ import streamlit as st
 import sqlite3
 import time
 from datetime import datetime
+import pandas as pd  # Naudosime CSV generavimui
 
-# Puslapio konfigūracija (pritaikyta telefonams)
-st.set_page_config(page_title="Laiko Trackeris", page_icon="⏱️", layout="centered")
+# Puslapio konfigūracija
+st.set_page_config(page_title="Valandų Seklys", page_icon="⏱️", layout="centered")
 
 # Duomenų bazės paruošimas
 def db_init():
@@ -23,13 +24,13 @@ def db_init():
 
 db_init()
 
-st.title("⏱️ Darbo Valandų Apskaita")
-st.caption("Tobula Python programėlė jūsų telefonui")
+st.title("⏱️ Valandų Seklys")
+st.caption("Jūsų asmeninis laiko optimizavimo įrankis")
 
 # Projekto įvedimas
-project_name = st.text_input("Projekto arba užduoties pavadinimas:", placeholder="Pvz.: Programavimas, Skaitymas")
+project_name = st.text_input("Užduoties ar veiklos pavadinimas:", placeholder="Pvz.: Skaitymas, Sportas, Kodavimas")
 
-# Naudojame Streamlit session_state laiko sekimui
+# Session state laikmačiui
 if "running" not in st.session_state:
     st.session_state.running = False
 if "start_time" not in st.session_state:
@@ -48,7 +49,7 @@ with col2:
         st.session_state.running = False
         elapsed = time.time() - st.session_state.start_time
         
-        # Formatuojame laiką
+        # Formatuojame laiką į HH:MM:SS
         hours, rem = divmod(elapsed, 3600)
         minutes, seconds = divmod(rem, 60)
         duration_str = f"{int(hours):02d}:{int(minutes):02d}:{int(seconds):02d}"
@@ -65,22 +66,31 @@ with col2:
         st.success(f"Išsaugota! Trukmė: {duration_str}")
         st.rerun()
 
-# Jei laikmatis veikia, parodome statusą
+# Jei laikmatis veikia
 if st.session_state.running:
-    st.info("⏱️ Laikmatis veikia... Paspauskite STABDYTI, kai baigsite.")
+    st.info("⏱️ Seklys skaičiuoja laiką... Užsiimkite veikla!")
 
-# Istorijos rodymas
+# --- ISTORIJA IR EKSPORTAS ---
 st.subheader("📊 Paskutiniai įrašai")
+
 conn = sqlite3.connect("mobilus_laikas.db")
-cursor = conn.cursor()
-cursor.execute("SELECT projektas, data, trukme FROM laiko_logas ORDER BY id DESC LIMIT 5")
-rows = cursor.fetchall()
+# Užkrauname duomenis tiesiai į Pandas DataFrame patogesniam valdymui
+df = pd.read_sql_query("SELECT projektas AS 'Veikla', data AS 'Data', trukme AS 'Trukmė' FROM laiko_logas ORDER BY id DESC", conn)
 conn.close()
 
-if rows:
-    for row in rows:
-        with st.container(border=True):
-            st.markdown(f"**📂 {row[0]}**")
-            st.markdown(f"📅 {row[1]} | ⏱️ {row[2]}")
+if not df.empty:
+    # Parodome paskutinius 5 įrašus gražioje Streamlit lentelėje
+    st.dataframe(df.head(5), use_container_width=True)
+    
+    # NAUJA FUNKCIJA: Duomenų atsisiuntimas (Eksportas)
+    csv = df.to_csv(index=False).encode('utf-8-sig') # utf-8-sig reikalingas, kad Excel teisingai rodytų lietuviškas raides
+    
+    st.download_button(
+        label="📥 Atsisiųsti visą istoriją (CSV / Excel)",
+        data=csv,
+        file_name=f"laiko_apskaita_{datetime.now().strftime('%Y%m%d')}.csv",
+        mime="text/csv",
+        use_container_width=True
+    )
 else:
     st.write("Įrašų dar nėra. Paleiskite laikmatį!")
